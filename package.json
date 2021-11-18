@@ -1,0 +1,26 @@
+{
+    "name": "mudlet-map-diff",
+    "version": "0.0.1",
+    "keywords": [
+        "mudlet",
+        "map",
+        "mud"
+    ],
+    "main": "index.js",
+    "license": "MIT",
+    "repository": {
+        "url": "git+https://github.com/Delwing/mudlet-map-diff.git"
+    },
+    "bugs": {
+        "url": "https://github.com/Delwing/mudlet-map-diff/issues"
+    },
+    "homepage": "https://github.com/Delwing/mudlet-map-diff#readme",
+    "dependencies": {
+        "canvas": "^2.8.0",
+        "mudlet-map-binary-reader": "^0.0.3",
+        "mudlet-map-renderer": "^0.0.2"
+    },
+    "scripts": {
+        "run": "node --max-old-space-size=2048 index.js"
+    }
+}
