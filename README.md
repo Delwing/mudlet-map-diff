@@ -6,5 +6,7 @@ Sole purpose of releasing it early is to create Github action for map comparison
 ## Example
 
 ```js
-createDiff("maps/v1.dat", "maps/v2.dat", "diff");
+createDiff("maps/v1.dat", "maps/v2.dat", "diff").then((diff) => {
+    console.log(diff);
+});
 ```

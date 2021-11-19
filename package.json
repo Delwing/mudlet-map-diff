@@ -1,6 +1,6 @@
 {
     "name": "mudlet-map-diff",
-    "version": "0.0.2",
+    "version": "0.0.1",
     "keywords": [
         "mudlet",
         "map",
@@ -16,8 +16,8 @@
     },
     "homepage": "https://github.com/Delwing/mudlet-map-diff#readme",
     "dependencies": {
-        "canvas": "^2.8.0",
         "mudlet-map-binary-reader": "^0.0.3",
-        "mudlet-map-renderer": "^0.0.2"
+        "mudlet-map-renderer": "^0.0.2",
+        "svgo": "^2.8.0"
     }
 }

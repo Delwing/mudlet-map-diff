@@ -1,7 +1,7 @@
 const { MudletMapReader } = require("mudlet-map-binary-reader");
 const { Renderer, MapReader } = require("mudlet-map-renderer");
 const fs = require("fs");
-const { loadImage } = require("canvas");
+const { optimize } = require("svgo");
 
 function deepCompare(obj1, obj2) {
   var diffObj = Array.isArray(obj2) ? [] : {};
@@ -13,7 +13,7 @@ function deepCompare(obj1, obj2) {
   }
   Object.getOwnPropertyNames(obj2).forEach(function (prop) {
     if (typeof obj2[prop] === "object") {
-      diffObj[prop] = deepCompare(obj1[prop], obj2[prop]);
+      diffObj[prop] = deepCompare(obj1[prop] || {}, obj2[prop]);
       if ((Array.isArray(diffObj[prop]) && Object.getOwnPropertyNames(diffObj[prop]).length === 1) || Object.getOwnPropertyNames(diffObj[prop]).length === 0) {
         delete diffObj[prop];
       }
@@ -44,7 +44,7 @@ function flatten(obj, parent, res = {}) {
  *
  * @returns {objec} map diff
  */
-let createDiff = function (map1, map2, outDir) {
+let createDiff = async function (map1, map2, outDir) {
   let tmpDir = "tmp";
 
   if (fs.existsSync(outDir)) {
@@ -76,7 +76,7 @@ let createDiff = function (map1, map2, outDir) {
     let offset = 25;
     let area = reader.getAreaByRoomId(roomLimits.id, { xMin: roomLimits.x - offset, yMin: roomLimits.y - offset, xMax: roomLimits.x + offset, yMax: roomLimits.y + offset });
 
-    let renderer = new Renderer(null, reader, area, reader.getColors(), { scale: 15 });
+    let renderer = new Renderer(null, reader, area, reader.getColors(), { scale: 15, areaName = false });
     renderer.renderSelection(roomId);
     renderer.renderPosition(roomId);
     return renderer.exportSvg(roomId, 20);
@@ -108,26 +108,24 @@ let createDiff = function (map1, map2, outDir) {
     }
   }
 
-  let readerV1 = new MapReader(require(`${__dirname}/${tmpDir}/old/mapExport.json`), require(`${__dirname}/${tmpDir}/old/colors.json`));
-  let readerV2 = new MapReader(require(`${__dirname}/${tmpDir}/new/mapExport.json`), require(`${__dirname}/${tmpDir}/new/colors.json`));
+  let processDir = process.cwd();
+
+  let readerV1 = new MapReader(require(`${processDir}/${tmpDir}/old/mapExport.json`), require(`${processDir}/${tmpDir}/old/colors.json`));
+  let readerV2 = new MapReader(require(`${processDir}/${tmpDir}/new/mapExport.json`), require(`${processDir}/${tmpDir}/new/colors.json`));
 
   for (const key in roomDiff) {
     if (Object.hasOwnProperty.call(roomDiff, key)) {
       let img1 = renderMapFragment(readerV1, key);
       let img2 = renderMapFragment(readerV2, key);
 
-      const { createCanvas } = require("canvas");
-      const canvas = createCanvas(1202, 600);
-      const ctx = canvas.getContext("2d");
-      ctx.textDrawingMode = "glyph";
+      let merged = optimize(`<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1202" height="600" viewBox="0,0,1202,600">
+            <rect width="1202" height="600" fill="black" />
+            <svg width="600" height="600" x="0" y="0">${img1}</svg>
+            <svg width="600" height="600" x="602" y="0">${img2}</svg>
+            <rect width="2" height="600" x="600" y="0" fill="red" />
+            </svg>`);
 
-      Promise.all([loadImage(Buffer.from(img1)), loadImage(Buffer.from(img2))]).then((images) => {
-        ctx.fillStyle = "#FFFFFF";
-        ctx.fillRect(0, 0, 1202, 600);
-        ctx.drawImage(images[0], 0, 0);
-        ctx.drawImage(images[1], 602, 0);
-        fs.writeFileSync(`${outDir}/${key}.png`, canvas.toBuffer());
-      });
+      fs.writeFileSync(`${outDir}/${key}.svg`, merged.data);
     }
   }
 
@@ -135,14 +133,11 @@ let createDiff = function (map1, map2, outDir) {
     if (Object.hasOwnProperty.call(added, key)) {
       let img1 = renderMapFragment(readerV2, added[key]);
 
-      const { createCanvas } = require("canvas");
-      const canvas = createCanvas(600, 600);
-      const ctx = canvas.getContext("2d");
-
-      Promise.all([loadImage(Buffer.from(img1))]).then((images) => {
-        ctx.drawImage(images[0], 0, 0);
-        fs.writeFileSync(`${outDir}/added_${added[key]}.png`, canvas.toBuffer());
-      });
+      let merged = optimize(`<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1202" height="600" viewBox="0,0,600,600">
+        <rect width="600" height="600" fill="black" />
+        <svg width="600" height="600" x="0" y="0">${img1}</svg>
+        </svg>`);
+        fs.writeFileSync(`${outDir}/${added[key]}.svg`, merged.data);
     }
   }
 
@@ -150,20 +145,17 @@ let createDiff = function (map1, map2, outDir) {
     if (Object.hasOwnProperty.call(deleted, key)) {
       let img1 = renderMapFragment(readerV1, deleted[key]);
 
-      const { createCanvas } = require("canvas");
-      const canvas = createCanvas(600, 600);
-      const ctx = canvas.getContext("2d");
-
-      Promise.all([loadImage(Buffer.from(img1))]).then((images) => {
-        ctx.drawImage(images[0], 0, 0);
-        fs.writeFileSync(`${outDir}/deleted_${deleted[key]}.png`, canvas.toBuffer());
-      });
+      let merged = optimize(`<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1202" height="600" viewBox="0,0,600,600">
+        <rect width="600" height="600" fill="black" />
+        <svg width="600" height="600" x="0" y="0">${img1}</svg>
+        </svg>`);
+      fs.writeFileSync(`${outDir}/${deleted[key]}.svg`, merged.data);
     }
   }
 
   fs.rmdirSync(tmpDir, { recursive: true });
 
-  return roomDiff;
+  return { changed: roomDiff, added: added, deleted: deleted };
 };
 
 module.exports = createDiff;
