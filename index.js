@@ -109,7 +109,7 @@ let createDiff = function (map1, map2, outDir) {
   }
 
   let readerV1 = new MapReader(require(`${__dirname}/${tmpDir}/old/mapExport.json`), require(`${__dirname}/${tmpDir}/old/colors.json`));
-  let readerV2 = new MapReader(require(`${__dirname}/new/mapExport.json`), require(`${__dirname}/${tmpDir}/new/colors.json`));
+  let readerV2 = new MapReader(require(`${__dirname}/${tmpDir}/new/mapExport.json`), require(`${__dirname}/${tmpDir}/new/colors.json`));
 
   for (const key in roomDiff) {
     if (Object.hasOwnProperty.call(roomDiff, key)) {

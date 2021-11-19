@@ -1,6 +1,6 @@
 {
     "name": "mudlet-map-diff",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "keywords": [
         "mudlet",
         "map",
@@ -19,8 +19,5 @@
         "canvas": "^2.8.0",
         "mudlet-map-binary-reader": "^0.0.3",
         "mudlet-map-renderer": "^0.0.2"
-    },
-    "scripts": {
-        "run": "node --max-old-space-size=2048 index.js"
     }
 }
