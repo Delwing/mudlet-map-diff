@@ -37,11 +37,11 @@ function flatten(obj, parent, res = {}) {
 }
 
 /**
- * 
+ *
  * @param {string} map1 path to old map
  * @param {string} map2 path to new map
  * @param {string} outDir output directory for diff images
- * 
+ *
  * @returns {objec} map diff
  */
 let createDiff = function (map1, map2, outDir) {
@@ -108,8 +108,8 @@ let createDiff = function (map1, map2, outDir) {
     }
   }
 
-  let readerV1 = new MapReader(require(`./${tmpDir}/old/mapExport.json`), require(`./${tmpDir}/old/colors.json`));
-  let readerV2 = new MapReader(require(`./${tmpDir}/new/mapExport.json`), require(`./${tmpDir}/new/colors.json`));
+  let readerV1 = new MapReader(require(`${__dirname}/${tmpDir}/old/mapExport.json`), require(`${__dirname}/${tmpDir}/old/colors.json`));
+  let readerV2 = new MapReader(require(`${__dirname}/new/mapExport.json`), require(`${__dirname}/${tmpDir}/new/colors.json`));
 
   for (const key in roomDiff) {
     if (Object.hasOwnProperty.call(roomDiff, key)) {
@@ -119,7 +119,7 @@ let createDiff = function (map1, map2, outDir) {
       const { createCanvas } = require("canvas");
       const canvas = createCanvas(1202, 600);
       const ctx = canvas.getContext("2d");
-      ctx.textDrawingMode = 'glyph';
+      ctx.textDrawingMode = "glyph";
 
       Promise.all([loadImage(Buffer.from(img1)), loadImage(Buffer.from(img2))]).then((images) => {
         ctx.fillStyle = "#FFFFFF";
@@ -166,4 +166,4 @@ let createDiff = function (map1, map2, outDir) {
   return roomDiff;
 };
 
-module.exports = createDiff
+module.exports = createDiff;
