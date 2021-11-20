@@ -1,7 +1,8 @@
 const { MudletMapReader } = require("mudlet-map-binary-reader");
-const { Renderer, MapReader } = require("mudlet-map-renderer");
+const { MapReader } = require("mudlet-map-renderer");
 const fs = require("fs");
-const { optimize } = require("svgo");
+const renderMapFragment = require("./rendering");
+const { singleSvg: singleSvg, doubleSvg: doubleSvg } = require("./svgs");
 
 function deepCompare(obj1, obj2) {
   var diffObj = Array.isArray(obj2) ? [] : {};
@@ -52,34 +53,16 @@ let createDiff = async function (map1, map2, outDir) {
   }
   fs.mkdirSync(outDir);
 
-  if (!fs.existsSync(tmpDir)) {
-    fs.mkdirSync(tmpDir);
-  }
-  if (!fs.existsSync(`${tmpDir}/old`)) {
-    fs.mkdirSync(`${tmpDir}/old`);
-  }
-  if (!fs.existsSync(`${tmpDir}/new`)) {
-    fs.mkdirSync(`${tmpDir}/new`);
-  }
+  [tmpDir, `${tmpDir}/new`, `${tmpDir}/old`].map((dir) => {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir);
+    }
+  });
 
   function preapareMap(mapPath, name) {
     let map = MudletMapReader.read(mapPath);
     MudletMapReader.export(map, `${tmpDir}/${name}`);
     return map;
-  }
-
-  function renderMapFragment(reader, roomId) {
-    let roomLimits = reader.roomIndex[roomId];
-    if (roomLimits === undefined) {
-      return;
-    }
-    let offset = 25;
-    let area = reader.getAreaByRoomId(roomLimits.id, { xMin: roomLimits.x - offset, yMin: roomLimits.y - offset, xMax: roomLimits.x + offset, yMax: roomLimits.y + offset });
-
-    let renderer = new Renderer(null, reader, area, reader.getColors(), { scale: 15, areaName = false });
-    renderer.renderSelection(roomId);
-    renderer.renderPosition(roomId);
-    return renderer.exportSvg(roomId, 20);
   }
 
   let v1 = preapareMap(map1, "old");
@@ -113,45 +96,30 @@ let createDiff = async function (map1, map2, outDir) {
   let readerV1 = new MapReader(require(`${processDir}/${tmpDir}/old/mapExport.json`), require(`${processDir}/${tmpDir}/old/colors.json`));
   let readerV2 = new MapReader(require(`${processDir}/${tmpDir}/new/mapExport.json`), require(`${processDir}/${tmpDir}/new/colors.json`));
 
-  for (const key in roomDiff) {
-    if (Object.hasOwnProperty.call(roomDiff, key)) {
-      let img1 = renderMapFragment(readerV1, key);
-      let img2 = renderMapFragment(readerV2, key);
+  await Promise.all(
+    Object.keys(roomDiff).map(
+      (roomId) =>
+        new Promise((resolve, reject) => {
+          let img1 = renderMapFragment(readerV1, roomId);
+          let img2 = renderMapFragment(readerV2, roomId);
+          fs.writeFileSync(`${outDir}/${roomId}.svg`, doubleSvg(img1, img2));
+          resolve();
+        })
+    )
+  );
 
-      let merged = optimize(`<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1202" height="600" viewBox="0,0,1202,600">
-            <rect width="1202" height="600" fill="black" />
-            <svg width="600" height="600" x="0" y="0">${img1}</svg>
-            <svg width="600" height="600" x="602" y="0">${img2}</svg>
-            <rect width="2" height="600" x="600" y="0" fill="red" />
-            </svg>`);
-
-      fs.writeFileSync(`${outDir}/${key}.svg`, merged.data);
-    }
-  }
-
-  for (const key in added) {
-    if (Object.hasOwnProperty.call(added, key)) {
-      let img1 = renderMapFragment(readerV2, added[key]);
-
-      let merged = optimize(`<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1202" height="600" viewBox="0,0,600,600">
-        <rect width="600" height="600" fill="black" />
-        <svg width="600" height="600" x="0" y="0">${img1}</svg>
-        </svg>`);
-        fs.writeFileSync(`${outDir}/${added[key]}.svg`, merged.data);
-    }
-  }
-
-  for (const key in deleted) {
-    if (Object.hasOwnProperty.call(deleted, key)) {
-      let img1 = renderMapFragment(readerV1, deleted[key]);
-
-      let merged = optimize(`<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1202" height="600" viewBox="0,0,600,600">
-        <rect width="600" height="600" fill="black" />
-        <svg width="600" height="600" x="0" y="0">${img1}</svg>
-        </svg>`);
-      fs.writeFileSync(`${outDir}/${deleted[key]}.svg`, merged.data);
-    }
-  }
+  await Promise.all(
+    added.map((roomId) => new Promise((resolve, reject) => {
+      let img = renderMapFragment(readerV2, roomId);
+      fs.writeFileSync(`${outDir}/${roomId}.svg`, singleSvg(img));
+    }))
+  );
+  await Promise.all(
+    deleted.map((roomId) => new Promise((resolve, reject) => {
+      let img = renderMapFragment(readerV1, roomId);
+      fs.writeFileSync(`${outDir}/${roomId}.svg`, singleSvg(img));
+    }))
+  );
 
   fs.rmdirSync(tmpDir, { recursive: true });
 
