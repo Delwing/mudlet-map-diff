@@ -112,12 +112,14 @@ let createDiff = async function (map1, map2, outDir) {
     added.map((roomId) => new Promise((resolve, reject) => {
       let img = renderMapFragment(readerV2, roomId);
       fs.writeFileSync(`${outDir}/${roomId}.svg`, singleSvg(img));
+      resolve();
     }))
   );
   await Promise.all(
     deleted.map((roomId) => new Promise((resolve, reject) => {
       let img = renderMapFragment(readerV1, roomId);
       fs.writeFileSync(`${outDir}/${roomId}.svg`, singleSvg(img));
+      resolve();
     }))
   );
 
