@@ -101,7 +101,6 @@ let createDiff = async function (map1, map2, outDir) {
       let img1 = renderMapFragment(readerV1, roomId);
       let img2 = renderMapFragment(readerV2, roomId);
       fs.writeFileSync(`${outDir}/${roomId}.svg`, doubleSvg(img1, img2));
-      resolve();
     })
   );
 
