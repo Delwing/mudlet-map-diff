@@ -97,30 +97,26 @@ let createDiff = async function (map1, map2, outDir) {
   let readerV2 = new MapReader(require(`${processDir}/${tmpDir}/new/mapExport.json`), require(`${processDir}/${tmpDir}/new/colors.json`));
 
   await Promise.all(
-    Object.keys(roomDiff).map(
-      (roomId) =>
-        new Promise((resolve, reject) => {
-          let img1 = renderMapFragment(readerV1, roomId);
-          let img2 = renderMapFragment(readerV2, roomId);
-          fs.writeFileSync(`${outDir}/${roomId}.svg`, doubleSvg(img1, img2));
-          resolve();
-        })
-    )
+    Object.keys(roomDiff).map(async (roomId) => {
+      let img1 = renderMapFragment(readerV1, roomId);
+      let img2 = renderMapFragment(readerV2, roomId);
+      fs.writeFileSync(`${outDir}/${roomId}.svg`, doubleSvg(img1, img2));
+      resolve();
+    })
   );
 
   await Promise.all(
-    added.map((roomId) => new Promise((resolve, reject) => {
+    added.map(async (roomId) => {
       let img = renderMapFragment(readerV2, roomId);
       fs.writeFileSync(`${outDir}/${roomId}.svg`, singleSvg(img));
-      resolve();
-    }))
+    })
   );
   await Promise.all(
-    deleted.map((roomId) => new Promise((resolve, reject) => {
+    deleted.map(async (roomId) => {
       let img = renderMapFragment(readerV1, roomId);
       fs.writeFileSync(`${outDir}/${roomId}.svg`, singleSvg(img));
       resolve();
-    }))
+    })
   );
 
   fs.rmdirSync(tmpDir, { recursive: true });
