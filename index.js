@@ -42,12 +42,11 @@ function flatten(obj, parent, res = {}) {
  * @param {string} map1 path to old map
  * @param {string} map2 path to new map
  * @param {string} outDir output directory for diff images
+ * @param {string} tmpDir tmp directory for mp process file
  *
  * @returns {objec} map diff
  */
-let createDiff = async function (map1, map2, outDir) {
-  let tmpDir = "tmp";
-
+let createDiff = async function (map1, map2, outDir, tmpDir = "tmp") {
   if (fs.existsSync(outDir)) {
     fs.rmdirSync(outDir, { recursive: true });
   }
