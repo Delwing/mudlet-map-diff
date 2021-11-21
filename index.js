@@ -113,7 +113,6 @@ let createDiff = async function (map1, map2, outDir, tmpDir = "tmp") {
     deleted.map(async (roomId) => {
       let img = renderMapFragment(readerV1, roomId);
       fs.writeFileSync(`${outDir}/${roomId}.svg`, singleSvg(img));
-      resolve();
     })
   );
 
