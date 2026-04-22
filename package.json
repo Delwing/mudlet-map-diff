@@ -1,13 +1,38 @@
 {
     "name": "mudlet-map-diff",
-    "version": "0.2.1",
+    "version": "1.0.0",
     "keywords": [
         "mudlet",
         "map",
         "mud"
     ],
-    "main": "index.js",
-    "license": "MIT",
+    "main": "dist/index.js",
+    "module": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "bin": {
+        "mudlet-map-diff": "dist/cli.js"
+    },
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js"
+        },
+        "./rendering": {
+            "types": "./dist/rendering.d.ts",
+            "import": "./dist/rendering.js"
+        },
+        "./svgs": {
+            "types": "./dist/svgs.d.ts",
+            "import": "./dist/svgs.js"
+        }
+    },
+    "type": "module",
+    "scripts": {
+        "build": "tsc && xcopy /E /I /Y src\\templates dist\\templates",
+        "start": "node dist/example.js",
+        "dev": "node --loader ts-node/esm src/example.ts",
+        "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js tests/index.test.ts"
+    },
     "repository": {
         "url": "git+https://github.com/Delwing/mudlet-map-diff.git"
     },
@@ -15,9 +40,23 @@
         "url": "https://github.com/Delwing/mudlet-map-diff/issues"
     },
     "homepage": "https://github.com/Delwing/mudlet-map-diff#readme",
+    "publishConfig": {
+        "access": "public"
+    },
     "dependencies": {
-        "mudlet-map-binary-reader": "^0.0.3",
-        "mudlet-map-renderer": "^0.0.2",
-        "svgo": "^2.8.0"
+        "canvas": "^3.2.3",
+        "commander": "^14.0.3",
+        "mudlet-map-binary-reader": "^0.8.0",
+        "mudlet-map-renderer": "^0.40.0-konva",
+        "svgo": "^4.0.1"
+    },
+    "devDependencies": {
+        "@types/jest": "^30.0.0",
+        "@types/node": "^25.6.0",
+        "@types/svgo": "^2.6.4",
+        "jest": "^30.3.0",
+        "ts-jest": "^29.4.9",
+        "ts-node": "^10.9.2",
+        "typescript": "^6.0.3"
     }
 }

@@ -3,3 +3,5 @@ maps
 node_modules
 example
 tmp
+.idea
+dist
