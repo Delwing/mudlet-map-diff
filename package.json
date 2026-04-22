@@ -28,7 +28,7 @@
     },
     "type": "module",
     "scripts": {
-        "build": "tsc && xcopy /E /I /Y src\\templates dist\\templates",
+        "build": "tsc && shx cp -r src/templates dist/",
         "start": "node dist/example.js",
         "dev": "node --loader ts-node/esm src/example.ts",
         "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js tests/index.test.ts"
@@ -55,6 +55,7 @@
         "@types/node": "^25.6.0",
         "@types/svgo": "^2.6.4",
         "jest": "^30.3.0",
+        "shx": "^0.4.0",
         "ts-jest": "^29.4.9",
         "ts-node": "^10.9.2",
         "typescript": "^6.0.3"
