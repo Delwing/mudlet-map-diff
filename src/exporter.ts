@@ -3,35 +3,13 @@ import * as fs from "fs";
 import * as path from "path";
 import { MapDiff } from "./diff.js";
 import { generateHtmlReport } from "./html-exporter.js";
-import { Worker } from "worker_threads";
-import * as os from "os";
+import { renderRoom, renderLabel } from "./rendering.js";
+import { singleSvg, doubleSvg } from "./svgs.js";
 
 export interface ExportOptions {
     outDir: string;
     svg?: boolean;
     html?: boolean;
-}
-
-type RenderTask =
-    | { type: "room_added"; id: number }
-    | { type: "room_deleted"; id: number }
-    | { type: "room_updated"; id: number }
-    | { type: "label_added"; label: MudletLabel & { areaId: number; id: number } }
-    | { type: "label_deleted"; label: MudletLabel & { areaId: number; id: number } }
-    | { type: "label_updated"; areaId: number; labelId: number; label1: MudletLabel & { areaId: number }; label2: MudletLabel & { areaId: number } };
-
-function spawnWorker(workerUrl: URL, tasks: RenderTask[], outDir: string, v1: MudletMap, v2: MudletMap, onProgress: () => void): Promise<void> {
-    return new Promise((resolve, reject) => {
-        const worker = new Worker(workerUrl, { workerData: { tasks, outDir, v1, v2 } });
-        worker.on("message", (msg: { type: string }) => {
-            if (msg.type === "progress") onProgress();
-            else if (msg.type === "done") resolve();
-        });
-        worker.on("error", reject);
-        worker.on("exit", (code) => {
-            if (code !== 0) reject(new Error(`Render worker exited with code ${code}`));
-        });
-    });
 }
 
 function renderProgressBar(completed: number, total: number): void {
@@ -49,49 +27,59 @@ export async function exportDiff(v1: MudletMap, v2: MudletMap, diff: MapDiff, op
     }
 
     if (svg) {
-        const tasks: RenderTask[] = [];
+        const total =
+            diff.rooms.added.length +
+            diff.rooms.deleted.length +
+            Object.keys(diff.rooms.updated).length +
+            diff.labels.added.length +
+            diff.labels.deleted.length +
+            Object.keys(diff.labels.updated).length;
 
-        for (const room of diff.rooms.added) {
-            tasks.push({ type: "room_added", id: room.id });
-        }
-        for (const room of diff.rooms.deleted) {
-            tasks.push({ type: "room_deleted", id: room.id });
-        }
-        for (const roomId in diff.rooms.updated) {
-            tasks.push({ type: "room_updated", id: parseInt(roomId) });
-        }
-        for (const label of diff.labels.added) {
-            tasks.push({ type: "label_added", label: label as MudletLabel & { areaId: number; id: number } });
-        }
-        for (const label of diff.labels.deleted) {
-            tasks.push({ type: "label_deleted", label: label as MudletLabel & { areaId: number; id: number } });
-        }
-        for (const compositeId in diff.labels.updated) {
-            const [areaIdStr, labelIdStr] = compositeId.split("-");
-            const areaId = parseInt(areaIdStr);
-            const labelId = parseInt(labelIdStr);
-            const label1 = (v1.labels[areaId] || []).find(l => (l.labelId ?? l.id) === labelId);
-            const label2 = (v2.labels[areaId] || []).find(l => (l.labelId ?? l.id) === labelId);
-            if (label1 && label2) {
-                tasks.push({ type: "label_updated", areaId, labelId, label1: { ...label1, areaId }, label2: { ...label2, areaId } });
-            }
-        }
-
-        if (tasks.length > 0) {
-            const workerUrl = new URL("./render-worker.js", import.meta.url);
-            const workerCount = Math.min(os.cpus().length, tasks.length);
-            const chunkSize = Math.ceil(tasks.length / workerCount);
-
+        if (total > 0) {
             let completed = 0;
-            renderProgressBar(0, tasks.length);
-            await Promise.all(
-                Array.from({ length: workerCount }, (_, i) => {
-                    const chunk = tasks.slice(i * chunkSize, (i + 1) * chunkSize);
-                    return chunk.length ? spawnWorker(workerUrl, chunk, outDir, v1, v2, () => {
-                        renderProgressBar(++completed, tasks.length);
-                    }) : Promise.resolve();
-                })
-            );
+            renderProgressBar(0, total);
+
+            for (const room of diff.rooms.added) {
+                const img = renderRoom(v2, room.id);
+                if (img) fs.writeFileSync(path.join(outDir, `room_${room.id}_added.svg`), singleSvg(img));
+                renderProgressBar(++completed, total);
+            }
+            for (const room of diff.rooms.deleted) {
+                const img = renderRoom(v1, room.id);
+                if (img) fs.writeFileSync(path.join(outDir, `room_${room.id}_deleted.svg`), singleSvg(img));
+                renderProgressBar(++completed, total);
+            }
+            for (const roomId in diff.rooms.updated) {
+                const id = parseInt(roomId);
+                const img1 = renderRoom(v1, id);
+                const img2 = renderRoom(v2, id);
+                if (img1 && img2) fs.writeFileSync(path.join(outDir, `room_${id}_updated.svg`), doubleSvg(img1, img2));
+                renderProgressBar(++completed, total);
+            }
+            for (const label of diff.labels.added as Array<MudletLabel & { areaId: number; id: number }>) {
+                const img = renderLabel(v2, label, true);
+                if (img) fs.writeFileSync(path.join(outDir, `label_${label.areaId}_${label.id}_added.svg`), singleSvg(img));
+                renderProgressBar(++completed, total);
+            }
+            for (const label of diff.labels.deleted as Array<MudletLabel & { areaId: number; id: number }>) {
+                const img = renderLabel(v1, label, true);
+                if (img) fs.writeFileSync(path.join(outDir, `label_${label.areaId}_${label.id}_deleted.svg`), singleSvg(img));
+                renderProgressBar(++completed, total);
+            }
+            for (const compositeId in diff.labels.updated) {
+                const [areaIdStr, labelIdStr] = compositeId.split("-");
+                const areaId = parseInt(areaIdStr);
+                const labelId = parseInt(labelIdStr);
+                const label1 = (v1.labels[areaId] || []).find(l => (l.labelId ?? l.id) === labelId);
+                const label2 = (v2.labels[areaId] || []).find(l => (l.labelId ?? l.id) === labelId);
+                if (label1 && label2) {
+                    const img1 = renderLabel(v1, { ...label1, areaId }, true);
+                    const img2 = renderLabel(v2, { ...label2, areaId }, true);
+                    if (img1 && img2) fs.writeFileSync(path.join(outDir, `label_${areaId}_${labelId}_updated.svg`), doubleSvg(img1, img2));
+                }
+                renderProgressBar(++completed, total);
+            }
+
             process.stdout.write("\n");
         }
     }
