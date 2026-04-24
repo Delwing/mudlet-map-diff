@@ -36,11 +36,12 @@ export function renderRoom(mapData: MudletMap, roomId: number): string | undefin
 
   const renderer = setupRenderer(mapData, room.area, room.z);
   renderer.setPosition(roomId);
-
-  return renderer.export(new SvgExporter({
+  const result = renderer.export(new SvgExporter({
     roomId: roomId,
     padding: 20,
   }));
+  renderer.destroy();
+  return result;
 }
 
 function setupRenderer(mapData: MudletMap, areaId: number, z: number): MapRenderer {
@@ -81,13 +82,15 @@ export function renderLabel(mapData: MudletMap, label: MudletLabel, highlight: b
   }
 
   const renderer = setupRenderer(mapData, areaId, lz);
-  
+
   if (highlight) {
     renderer.addSceneOverlay("label-highlight", new LabelHighlightOverlay(label));
   }
-  
-  return renderer.export(new SvgExporter({
+
+  const result = renderer.export(new SvgExporter({
     roomId: closestRoomId,
     padding: 20,
   }));
+  renderer.destroy();
+  return result;
 }

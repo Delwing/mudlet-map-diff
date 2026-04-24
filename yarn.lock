@@ -2284,18 +2284,18 @@ ms@2.1.2:
   resolved "https://registry.npmjs.org/ms/-/ms-2.1.2.tgz"
   integrity sha512-sGkPx+VjMtmA6MX27oA4FBFELFCZZ4S4XqeGOXCv68tT+jb3vk/RyaKWP0PTKyWtmLSM0b+adUTEvbs1PEaH2w==
 
-mudlet-map-binary-reader@^0.8.0:
-  version "0.8.0"
-  resolved "https://registry.npmjs.org/mudlet-map-binary-reader/-/mudlet-map-binary-reader-0.8.0.tgz"
-  integrity sha512-ABNSUgowHBwG/uLeoqvsC9p6TEXCPAKGABy8ChlGwvck5H0NpRiuetBBYvLlaLkdST/g1cmRjpCtk5CjmgGKoQ==
+mudlet-map-binary-reader@^0.9.0:
+  version "0.9.0"
+  resolved "https://registry.yarnpkg.com/mudlet-map-binary-reader/-/mudlet-map-binary-reader-0.9.0.tgz#aa2964223610ed525fda16691a72e1ad3e9d5c9b"
+  integrity sha512-ntS8qZhvkDwZx+uB53SsP6xHpZ8Hh17ePLAahaN9Pr/3A7CJvVdWO3awch9Fk1botHSBA8aqvpSzU6sIQi7hQw==
   dependencies:
     lodash "4.18.0"
     qtdatastream "^1.1.0"
 
-mudlet-map-renderer@^0.40.0-konva:
-  version "0.40.0-konva"
-  resolved "https://registry.npmjs.org/mudlet-map-renderer/-/mudlet-map-renderer-0.40.0-konva.tgz"
-  integrity sha512-R5jRo2RkaKoFmAM4/YWFCMA8999tbHxsVxyNsPf9BuAILcyNPkCoobuQmcN5WANpIZDZqxZtRreYQCSGCVZJ4g==
+mudlet-map-renderer@^0.41.1-konva:
+  version "0.41.1-konva"
+  resolved "https://registry.yarnpkg.com/mudlet-map-renderer/-/mudlet-map-renderer-0.41.1-konva.tgz#17cd434a5eb2605004e7f69a37e6f0023d2301e0"
+  integrity sha512-YjYpLZblqoRK1JS0J3ZkcoVxdNLTZmqT9esUWQ5Z2gLKM7op8KHDw2bpZS468ZZ1duJOqGfJMGJ4uy/51C1puQ==
   dependencies:
     konva "^10.2.4"
     node-dijkstra "^2.5.1"
