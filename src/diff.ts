@@ -88,6 +88,14 @@ export function getPropertyDiff(obj1: unknown, obj2: unknown): PropertyDiff {
             to: flatDiff[key]
         };
     }
+    for (const key in flatRevDiff) {
+        if (!(key in result)) {
+            result[key] = {
+                from: flatRevDiff[key],
+                to: undefined
+            };
+        }
+    }
     return result;
 }
 

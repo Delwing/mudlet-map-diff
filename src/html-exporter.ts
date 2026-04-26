@@ -1,12 +1,23 @@
 import { MudletMap } from "mudlet-map-binary-reader/dist/types.js";
 import { MapDiff, PropertyDiff } from "./diff.js";
-import { renderRoom, renderLabel } from "./rendering.js";
-import { singleSvg, doubleSvg } from "./svgs.js";
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+export interface RenderedImages {
+    rooms: {
+        added: Record<number, string>;
+        deleted: Record<number, string>;
+        updated: Record<number, string>;
+    };
+    labels: {
+        added: Record<string, string>;
+        deleted: Record<string, string>;
+        updated: Record<string, string>;
+    };
+}
 
 function escapeHtml(unsafe: string): string {
     return unsafe
@@ -37,7 +48,7 @@ function renderPropertyDiff(diff: PropertyDiff): string {
     return html;
 }
 
-export function generateHtmlReport(v1: MudletMap, v2: MudletMap, diff: MapDiff): string {
+export function generateHtmlReport(v1: MudletMap, v2: MudletMap, diff: MapDiff, images?: RenderedImages): string {
     const sections: string[] = [];
 
     // Summary Section
@@ -118,21 +129,17 @@ export function generateHtmlReport(v1: MudletMap, v2: MudletMap, diff: MapDiff):
     // Rooms
     const roomItems: ReportItem[] = [];
     diff.rooms.added.forEach(r => {
-        const img = renderRoom(v2, r.id);
-        roomItems.push({ id: `added-${r.id}`, label: `Room ${r.id} (Added)`, svg: img ? singleSvg(img) : "" });
+        roomItems.push({ id: `added-${r.id}`, label: `Room ${r.id} (Added)`, svg: images?.rooms.added[r.id] ?? "" });
     });
     diff.rooms.deleted.forEach(r => {
-        const img = renderRoom(v1, r.id);
-        roomItems.push({ id: `deleted-${r.id}`, label: `Room ${r.id} (Deleted)`, svg: img ? singleSvg(img) : "" });
+        roomItems.push({ id: `deleted-${r.id}`, label: `Room ${r.id} (Deleted)`, svg: images?.rooms.deleted[r.id] ?? "" });
     });
     for (const [id, propDiff] of Object.entries(diff.rooms.updated)) {
         const rid = parseInt(id);
-        const img1 = renderRoom(v1, rid);
-        const img2 = renderRoom(v2, rid);
-        roomItems.push({ 
-            id: `updated-${id}`, 
-            label: `Room ${id} (Updated)`, 
-            svg: (img1 && img2) ? doubleSvg(img1, img2) : "",
+        roomItems.push({
+            id: `updated-${id}`,
+            label: `Room ${id} (Updated)`,
+            svg: images?.rooms.updated[rid] ?? "",
             details: renderPropertyDiff(propDiff)
         });
     }
@@ -141,29 +148,21 @@ export function generateHtmlReport(v1: MudletMap, v2: MudletMap, diff: MapDiff):
     // Labels
     const labelItems: ReportItem[] = [];
     diff.labels.added.forEach(l => {
-        const img = renderLabel(v2, l, true);
-        labelItems.push({ id: `added-${l.id}`, label: `Label ${l.id} in Area ${l.areaId} (Added)`, svg: img ? singleSvg(img) : "" });
+        labelItems.push({ id: `added-${l.id}`, label: `Label ${l.id} in Area ${l.areaId} (Added)`, svg: images?.labels.added[`${l.areaId}-${l.id}`] ?? "" });
     });
     diff.labels.deleted.forEach(l => {
-        const img = renderLabel(v1, l, true);
-        labelItems.push({ id: `deleted-${l.id}`, label: `Label ${l.id} in Area ${l.areaId} (Deleted)`, svg: img ? singleSvg(img) : "" });
+        labelItems.push({ id: `deleted-${l.id}`, label: `Label ${l.id} in Area ${l.areaId} (Deleted)`, svg: images?.labels.deleted[`${l.areaId}-${l.id}`] ?? "" });
     });
     for (const [compositeId, propDiff] of Object.entries(diff.labels.updated)) {
         const [areaIdStr, labelIdStr] = compositeId.split("-");
         const areaId = parseInt(areaIdStr);
         const labelId = parseInt(labelIdStr);
-        const label1 = (v1.labels[areaId] || []).find(l => (l.labelId ?? l.id) === labelId);
-        const label2 = (v2.labels[areaId] || []).find(l => (l.labelId ?? l.id) === labelId);
-        if (label1 && label2) {
-            const img1 = renderLabel(v1, { ...label1, areaId }, true);
-            const img2 = renderLabel(v2, { ...label2, areaId }, true);
-            labelItems.push({ 
-                id: `updated-${compositeId}`, 
-                label: `Label ${labelId} in Area ${areaId} (Updated)`, 
-                svg: (img1 && img2) ? doubleSvg(img1, img2) : "",
-                details: renderPropertyDiff(propDiff)
-            });
-        }
+        labelItems.push({
+            id: `updated-${compositeId}`,
+            label: `Label ${labelId} in Area ${areaId} (Updated)`,
+            svg: images?.labels.updated[compositeId] ?? "",
+            details: renderPropertyDiff(propDiff)
+        });
     }
     sections.push(createDetailSection("Labels", "labels", labelItems));
 
@@ -180,9 +179,9 @@ export function generateHtmlReport(v1: MudletMap, v2: MudletMap, diff: MapDiff):
     for (const [id, propDiff] of Object.entries(diff.areas.updated)) {
         const aid = parseInt(id);
         const name = v2.areaNames[aid] || "Unknown";
-        areaItems.push({ 
-            id: `updated-${id}`, 
-            label: `Area ${id} (${name}) (Updated)`, 
+        areaItems.push({
+            id: `updated-${id}`,
+            label: `Area ${id} (${name}) (Updated)`,
             svg: "",
             details: renderPropertyDiff(propDiff)
         });
