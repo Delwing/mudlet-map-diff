@@ -10,12 +10,13 @@ export interface ExportOptions {
     outDir: string;
     svg?: boolean;
     html?: boolean;
+    debugRaw?: boolean;
     onProgress?: (completed: number, total: number) => void;
     images?: RenderedImages;
 }
 
 export async function exportDiff(v1: MudletMap, v2: MudletMap, diff: MapDiff, options: ExportOptions): Promise<RenderedImages | undefined> {
-    const { outDir, svg = true, html = false, onProgress } = options;
+    const { outDir, svg = true, html = false, debugRaw = false, onProgress } = options;
 
     if (!fs.existsSync(outDir)) {
         fs.mkdirSync(outDir, { recursive: true });
@@ -47,6 +48,7 @@ export async function exportDiff(v1: MudletMap, v2: MudletMap, diff: MapDiff, op
             for (const room of diff.rooms.added) {
                 const img = session2.renderRoom(room.id);
                 if (img) {
+                    if (debugRaw) fs.writeFileSync(path.join(outDir, `room_${room.id}_added_raw.svg`), img);
                     const svgContent = singleSvg(img);
                     fs.writeFileSync(path.join(outDir, `room_${room.id}_added.svg`), svgContent);
                     images.rooms.added[room.id] = svgContent;
@@ -56,6 +58,7 @@ export async function exportDiff(v1: MudletMap, v2: MudletMap, diff: MapDiff, op
             for (const room of diff.rooms.deleted) {
                 const img = session1.renderRoom(room.id);
                 if (img) {
+                    if (debugRaw) fs.writeFileSync(path.join(outDir, `room_${room.id}_deleted_raw.svg`), img);
                     const svgContent = singleSvg(img);
                     fs.writeFileSync(path.join(outDir, `room_${room.id}_deleted.svg`), svgContent);
                     images.rooms.deleted[room.id] = svgContent;
@@ -67,6 +70,10 @@ export async function exportDiff(v1: MudletMap, v2: MudletMap, diff: MapDiff, op
                 const img1 = session1.renderRoom(id);
                 const img2 = session2.renderRoom(id);
                 if (img1 && img2) {
+                    if (debugRaw) {
+                        fs.writeFileSync(path.join(outDir, `room_${id}_updated_v1_raw.svg`), img1);
+                        fs.writeFileSync(path.join(outDir, `room_${id}_updated_v2_raw.svg`), img2);
+                    }
                     const svgContent = doubleSvg(img1, img2);
                     fs.writeFileSync(path.join(outDir, `room_${id}_updated.svg`), svgContent);
                     images.rooms.updated[id] = svgContent;
@@ -76,6 +83,7 @@ export async function exportDiff(v1: MudletMap, v2: MudletMap, diff: MapDiff, op
             for (const label of diff.labels.added as Array<MudletLabel & { areaId: number; id: number }>) {
                 const img = session2.renderLabel(label, true);
                 if (img) {
+                    if (debugRaw) fs.writeFileSync(path.join(outDir, `label_${label.areaId}_${label.id}_added_raw.svg`), img);
                     const svgContent = singleSvg(img);
                     fs.writeFileSync(path.join(outDir, `label_${label.areaId}_${label.id}_added.svg`), svgContent);
                     images.labels.added[`${label.areaId}-${label.id}`] = svgContent;
@@ -85,6 +93,7 @@ export async function exportDiff(v1: MudletMap, v2: MudletMap, diff: MapDiff, op
             for (const label of diff.labels.deleted as Array<MudletLabel & { areaId: number; id: number }>) {
                 const img = session1.renderLabel(label, true);
                 if (img) {
+                    if (debugRaw) fs.writeFileSync(path.join(outDir, `label_${label.areaId}_${label.id}_deleted_raw.svg`), img);
                     const svgContent = singleSvg(img);
                     fs.writeFileSync(path.join(outDir, `label_${label.areaId}_${label.id}_deleted.svg`), svgContent);
                     images.labels.deleted[`${label.areaId}-${label.id}`] = svgContent;
@@ -101,6 +110,10 @@ export async function exportDiff(v1: MudletMap, v2: MudletMap, diff: MapDiff, op
                     const img1 = session1.renderLabel({ ...label1, areaId }, true);
                     const img2 = session2.renderLabel({ ...label2, areaId }, true);
                     if (img1 && img2) {
+                        if (debugRaw) {
+                            fs.writeFileSync(path.join(outDir, `label_${areaId}_${labelId}_updated_v1_raw.svg`), img1);
+                            fs.writeFileSync(path.join(outDir, `label_${areaId}_${labelId}_updated_v2_raw.svg`), img2);
+                        }
                         const svgContent = doubleSvg(img1, img2);
                         fs.writeFileSync(path.join(outDir, `label_${areaId}_${labelId}_updated.svg`), svgContent);
                         images.labels.updated[compositeId] = svgContent;

@@ -46,6 +46,7 @@ program
     .option('-o, --output <dir>', 'directory to save the SVG diffs', 'diff')
     .option('--html', 'generate interactive HTML report', false)
     .option('--no-svg', 'do not generate individual SVG files')
+    .option('--debug-raw', 'also save raw renderer SVGs before composition', false)
     .action(async (oldMap, newMap, options) => {
         const tasks = new Listr<Ctx>(
             [
@@ -73,6 +74,7 @@ program
                             outDir: options.output,
                             svg: true,
                             html: false,
+                            debugRaw: options.debugRaw,
                             onProgress: (done) => {
                                 const pct = Math.floor((done / total) * 100);
                                 const filled = Math.floor((done / total) * 30);
