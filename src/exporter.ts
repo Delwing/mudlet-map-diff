@@ -1,4 +1,4 @@
-import { MudletMap, MudletLabel } from "mudlet-map-binary-reader/dist/types.js";
+import { MudletMap, MudletLabel } from "mudlet-map-binary-reader";
 import * as fs from "fs";
 import * as path from "path";
 import { MapDiff } from "./diff.js";

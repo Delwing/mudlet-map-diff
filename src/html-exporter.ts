@@ -1,4 +1,4 @@
-import { MudletMap } from "mudlet-map-binary-reader/dist/types.js";
+import { MudletMap } from "mudlet-map-binary-reader";
 import { MapDiff, PropertyDiff } from "./diff.js";
 import * as fs from "fs";
 import * as path from "path";
@@ -34,6 +34,9 @@ function formatValue(value: unknown): string {
     if (Buffer.isBuffer(value)) {
         const base64 = value.toString("base64");
         return `<img src="data:image/png;base64,${base64}" class="pixmap-preview" title="Pixmap data" />`;
+    }
+    if (Array.isArray(value)) {
+        return `[${(value as unknown[]).map(v => escapeHtml(String(v))).join(', ')}]`;
     }
     if (typeof value === "string") return `"${escapeHtml(value)}"`;
     return escapeHtml(String(value));

@@ -1,7 +1,6 @@
 import {createSettings, MapReader, MapRenderer, SvgExporter, SceneOverlay, MapState, RectShape, Shape, ViewportBounds} from "mudlet-map-renderer";
 import "konva/canvas-backend";
-import MudletMapReader from "mudlet-map-binary-reader";
-import {MudletLabel, MudletMap} from "mudlet-map-binary-reader/dist/types.js";
+import {readerExport, MudletLabel, MudletMap} from "mudlet-map-binary-reader";
 
 class LabelHighlightOverlay implements SceneOverlay {
   constructor(private label: MudletLabel) {}
@@ -31,7 +30,7 @@ class LabelHighlightOverlay implements SceneOverlay {
 }
 
 function setupRenderer(mapData: MudletMap, areaId: number, z: number): MapRenderer {
-  const exportData = MudletMapReader.readerExport(mapData);
+  const exportData = readerExport(mapData);
   const reader = new MapReader(exportData.mapData, exportData.colors);
   const settings = createSettings();
   settings.areaName = false;
@@ -46,11 +45,11 @@ function setupRenderer(mapData: MudletMap, areaId: number, z: number): MapRender
 
 export class MapRenderSession {
   private renderers = new Map<string, MapRenderer>();
-  private exportData: ReturnType<typeof MudletMapReader.readerExport>;
+  private exportData: ReturnType<typeof readerExport>;
   private reader: MapReader;
 
   constructor(private mapData: MudletMap) {
-    this.exportData = MudletMapReader.readerExport(mapData);
+    this.exportData = readerExport(mapData);
     this.reader = new MapReader(this.exportData.mapData, this.exportData.colors);
   }
 

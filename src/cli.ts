@@ -3,8 +3,9 @@ import { Command } from 'commander';
 import { Listr } from 'listr2';
 import { compareMaps, MapDiff } from './diff.js';
 import { exportDiff } from './exporter.js';
+import { prunePixelIdenticalPixMaps } from './pixmap.js';
 import { RenderedImages } from './html-exporter.js';
-import { MudletMap } from 'mudlet-map-binary-reader/dist/types.js';
+import { MudletMap } from 'mudlet-map-binary-reader';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { readFileSync } from 'fs';
@@ -52,12 +53,15 @@ program
             [
                 {
                     title: 'Computing diff',
-                    task: (ctx, task) => {
+                    task: async (ctx, task) => {
                         const result = compareMaps(oldMap, newMap);
                         ctx.v1 = result.v1;
                         ctx.v2 = result.v2;
                         ctx.diff = result.diff;
-                        task.title = `Computing diff — ${diffSummary(ctx.diff)}`;
+                        // Labels a newer Qt merely re-encoded are not changes.
+                        const pruned = await prunePixelIdenticalPixMaps(ctx.diff);
+                        const reencoded = pruned > 0 ? ` (${pruned} label pixmap${pruned !== 1 ? 's' : ''} re-encoded, not changed)` : '';
+                        task.title = `Computing diff — ${diffSummary(ctx.diff)}${reencoded}`;
                     },
                 },
                 {
