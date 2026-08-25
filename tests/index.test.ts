@@ -184,6 +184,36 @@ describe('createDiff', () => {
     expect(diff.labels.updated['1-100'].pixMap.to).toEqual(buf2);
   });
 
+  it('should not report rawSpecialExits, the on-disk form of mSpecialExits', async () => {
+    // The file stores special exits as {targetId: ["<lock><command>"]}; the
+    // reader hydrates that into mSpecialExits + mSpecialExitLocks and rebuilds
+    // it on write. Reporting both restates every special-exit edit twice, the
+    // second time keyed by target id with the lock flag glued to the command.
+    const withExitTo = (target: number) => ({
+      ...emptyMap,
+      areas: { 1: {} },
+      rooms: {
+        1: {
+          name: 'Room 1',
+          mSpecialExits: { 'pchnij plyte': target },
+          mSpecialExitLocks: [],
+          rawSpecialExits: { [target]: ['0pchnij plyte'] },
+        },
+      },
+    });
+
+    MudletMapReader.readMapFromBuffer
+      .mockReturnValueOnce(withExitTo(22561))
+      .mockReturnValueOnce(withExitTo(22557));
+
+    const diff = await createDiff(MAP_1, MAP_2);
+
+    const roomDiff = diff.rooms.updated['1'];
+    expect(roomDiff).toBeDefined();
+    expect(roomDiff['mSpecialExits.pchnij plyte']).toEqual({ from: 22561, to: 22557 });
+    expect(Object.keys(roomDiff).filter((k) => k.startsWith('rawSpecialExits'))).toHaveLength(0);
+  });
+
   it('should compare label coordinates positionally, not as a set', async () => {
     // A label whose x and y swap has moved. Set semantics (or sorting the
     // components first) would compare the two triples equal and report nothing.

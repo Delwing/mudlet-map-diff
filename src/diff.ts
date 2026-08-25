@@ -24,6 +24,16 @@ const SET_VALUED_FIELDS = new Set(['rooms', 'zLevels', 'exitLocks', 'stubs', 'mS
 // behaviour.
 const TUPLE_VALUED_FIELDS = new Set(['pos', 'span', 'size']);
 
+// Fields that restate, in the on-disk encoding, data reported elsewhere in a
+// readable form. `rawSpecialExits` is the QMultiMap<targetId, "<lock><command>">
+// layout the file stores; Mudlet keeps it only as a local while loading
+// (TRoom::restore) and the reader re-derives it on write, so every special-exit
+// edit would otherwise be reported twice — once as
+// `mSpecialExits."pchnij plyte": 22561 -> 22557` and once as a pair of
+// `rawSpecialExits.<id>.0` lines whose leading "0" is the unlocked flag, not
+// part of the command.
+const DERIVED_FIELDS = new Set(['rawSpecialExits']);
+
 function deepCompare(obj1: unknown, obj2: unknown, key?: string): any {
     if (Buffer.isBuffer(obj1) && Buffer.isBuffer(obj2)) {
         return obj1.equals(obj2) ? {} : obj2;
@@ -115,6 +125,10 @@ export interface MapDiff {
     map: PropertyDiff;
 }
 
+function isDerived(flatKey: string): boolean {
+    return DERIVED_FIELDS.has(flatKey.split('.')[0]);
+}
+
 export function getPropertyDiff(obj1: unknown, obj2: unknown): PropertyDiff {
     const diff = deepCompare(obj1, obj2);
     const revDiff = deepCompare(obj2, obj1);
@@ -123,6 +137,7 @@ export function getPropertyDiff(obj1: unknown, obj2: unknown): PropertyDiff {
 
     const result: PropertyDiff = {};
     for (const key in flatDiff) {
+        if (isDerived(key)) continue;
         const val = flatDiff[key];
         if (val instanceof SetDiffValue) {
             // The forward diff already carries both directions; construct from/to directly.
@@ -139,7 +154,7 @@ export function getPropertyDiff(obj1: unknown, obj2: unknown): PropertyDiff {
         }
     }
     for (const key in flatRevDiff) {
-        if (key in result) continue;
+        if (key in result || isDerived(key)) continue;
         const val = flatRevDiff[key];
         if (val instanceof SetDiffValue) continue; // mirror of a forward set-diff entry, skip
         result[key] = {
